@@ -17,12 +17,18 @@ import {
   MinusCircle,
 } from "lucide-react";
 
+import { ParkingSpot } from "@/lib/types";
+
 type Props = {
   slotId: string;
   distanceCm: number | null; // null => no live sensor
   gps?: string;
   installed?: boolean;
   active?: boolean;
+  occupied?: boolean;
+  sensorPin?: number;
+  threshold?: number;
+  spotData?: ParkingSpot;
 };
 
 export default function ParkingCard({
@@ -31,20 +37,27 @@ export default function ParkingCard({
   gps = "26.9124,75.7873",
   installed = false,
   active = false,
-}: Props) {
+  occupied: propOccupied = false,
+  sensorPin,
+  threshold = 10,
+  spotData,
+}: Readonly<Props>) {
   const [open, setOpen] = useState(false);
 
-  // Occupancy logic: if installed, active, and distance between 30 and 200 cm -> occupied
-  const occupied =
-    installed && active && distanceCm !== null && distanceCm >= 30 && distanceCm <= 200;
+  // Use Firebase occupancy data if available, otherwise use legacy logic
+  const occupied = spotData
+    ? spotData.isOccupied
+    : propOccupied || (installed && active && distanceCm !== null && distanceCm < threshold);
 
-  const statusText = !installed
-    ? "Not Installed"
-    : !active
-    ? "Disconnected"
-    : occupied
-    ? "Occupied"
-    : "Available";
+  // Calculate status text
+  const getStatusText = () => {
+    if (installed === false) return "Not Installed";
+    if (active === false) return "Disconnected"; 
+    if (occupied) return "Occupied";
+    return "Available";
+  };
+  
+  const statusText = getStatusText();
 
   return (
     <>

@@ -1,99 +1,190 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import Header from "@/components/Header";
 import ParkingGrid from "@/components/ParkingGrid";
 import ParkingOccupancyChart from "@/components/ParkingOccupancyChart";
-
-type HistoryPoint = {
-  time: string;
-  distance: number;
-};
+import { ParkingSpot, HistoryPoint } from "@/lib/types";
 
 export default function Page() {
-  const [distances, setDistances] = useState<(number | null)[]>([]); // ✅ array of sensor readings
+  const [spots, setSpots] = useState<ParkingSpot[]>([]);
+  const [distances, setDistances] = useState<(number | null)[]>([null, null, null]);
+  const [lastValidDistances, setLastValidDistances] = useState<(number | null)[]>([null, null, null]);
   const [active, setActive] = useState(false);
   const [history, setHistory] = useState<HistoryPoint[]>([]);
+  const [loading, setLoading] = useState(true);
+  const lastUpdateTime = useRef<number>(Date.now());
 
-  // ✅ Load history from localStorage on mount
+  // Load parking spots from API
+  useEffect(() => {
+    const fetchSpots = async () => {
+      try {
+        const response = await fetch("/api/parking-spots");
+        if (response.ok) {
+          const data = await response.json();
+          setSpots(data.spots || []);
+        }
+      } catch (error) {
+        console.error("Error fetching spots:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchSpots();
+    
+    // Refresh data every 10 seconds for spots
+    const interval = setInterval(fetchSpots, 10000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Load history from localStorage
   useEffect(() => {
     const saved = localStorage.getItem("parking-history");
     if (saved) {
       try {
-        setHistory(JSON.parse(saved));
+        const savedHistory = JSON.parse(saved);
+        setHistory(savedHistory);
       } catch {
         localStorage.removeItem("parking-history");
       }
     }
   }, []);
 
-  // ✅ Save history to localStorage whenever it changes (debounced)
+  // Get sensor data updates with anti-blinking logic
   useEffect(() => {
-    if (history.length === 0) return;
-
-    const id = setTimeout(() => {
-      localStorage.setItem("parking-history", JSON.stringify(history));
-    }, 500); // debounce saves
-
-    return () => clearTimeout(id);
-  }, [history]);
-
-  useEffect(() => {
-    const fetchState = async () => {
+    const fetchSensorData = async () => {
       try {
         const res = await fetch("/api/update");
         if (!res.ok) return;
 
         const json = await res.json();
         const isActive = !!json.active;
+        const currentTime = Date.now();
+        
         setActive(isActive);
+        lastUpdateTime.current = currentTime;
 
-        // ✅ update distances array
+        // Smart distance updating to prevent blinking
         if (Array.isArray(json.distances)) {
-          setDistances(json.distances);
+          setDistances(prevDistances => {
+            const newDistances = [...prevDistances];
+            
+            json.distances.forEach((newDistance: number | null, index: number) => {
+              if (newDistance !== null) {
+                // Valid reading - always update
+                newDistances[index] = newDistance;
+                setLastValidDistances(prev => {
+                  const updated = [...prev];
+                  updated[index] = newDistance;
+                  return updated;
+                });
+              } else {
+                // Null reading - check if we should maintain previous value
+                const timeSinceUpdate = currentTime - lastUpdateTime.current;
+                if (timeSinceUpdate < 8000 && prevDistances[index] !== null) {
+                  // Keep previous value for 8 seconds to prevent blinking
+                  // newDistances[index] already has previous value
+                } else {
+                  // After 8 seconds, accept null value
+                  newDistances[index] = null;
+                }
+              }
+            });
+            
+            return newDistances;
+          });
         }
 
-        // ✅ still track history for the first sensor only (A1)
+        // Update history for first sensor (legacy compatibility)
         if (isActive && Array.isArray(json.distances) && typeof json.distances[0] === "number") {
           const d = json.distances[0];
-
           const now = new Date();
           const timeStr = now.toLocaleTimeString([], {
             hour: "2-digit",
             minute: "2-digit",
           });
 
-          setHistory((prev) =>
-            [...prev, { time: timeStr, distance: d }].slice(-50)
-          );
+          setHistory((prev) => {
+            const newHistory = [...prev, { 
+              time: timeStr, 
+              distance: d, 
+              timestamp: { seconds: Math.floor(Date.now() / 1000), nanoseconds: 0 },
+              spotId: "A1" 
+            }].slice(-50);
+            localStorage.setItem("parking-history", JSON.stringify(newHistory));
+            return newHistory;
+          });
         }
-      } catch {
-        // ignore fetch errors
+      } catch (error) {
+        console.error("Error fetching sensor data:", error);
       }
     };
 
-    fetchState();
-    const id = setInterval(fetchState, 5000);
+    fetchSensorData();
+    const id = setInterval(fetchSensorData, 3000); // Fast polling for smooth experience
     return () => clearInterval(id);
   }, []);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-slate-950 text-gray-100 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-400 mx-auto mb-4"></div>
+          <p className="text-gray-400">Loading parking data...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-slate-950 text-gray-100">
       <Header />
       <main className="p-6 max-w-7xl mx-auto">
-        <div className="mb-6">
-          <h2 className="text-2xl font-semibold text-indigo-300">Parking Slots</h2>
-          <p className="text-sm text-gray-400">
-            Overview of parking slots and sensors
-          </p>
+        <div className="mb-6 flex items-center justify-between">
+          <div>
+            <h2 className="text-2xl font-semibold text-indigo-300">Parking Slots</h2>
+            <p className="text-sm text-gray-400">
+              Real-time overview of {spots.length || 3} configured parking spots
+            </p>
+          </div>
+          <div className="text-right">
+            <div className="text-sm text-gray-400">
+              <div>Total: {spots.length || 3}</div>
+              <div className="text-green-400">
+                Available: {spots.length ? spots.filter(s => s.isActive && !s.isOccupied).length : distances.filter((d, i) => d !== null && d >= 10).length}
+              </div>
+              <div className="text-red-400">
+                Occupied: {spots.length ? spots.filter(s => s.isActive && s.isOccupied).length : distances.filter((d, i) => d !== null && d < 10).length}
+              </div>
+            </div>
+          </div>
         </div>
 
-        {/* ✅ pass active + all distances */}
-        <ParkingGrid distances={distances} active={active} />
+        {/* Updated ParkingGrid with stable distances */}
+        <ParkingGrid 
+          distances={distances} 
+          active={active} 
+          spots={spots}
+        />
 
         <div className="mt-10">
-          {/* ✅ Chart still only for first slot (A1) */}
-          <ParkingOccupancyChart slotId="A1" data={history} />
+          {/* Chart for first active spot */}
+          {(spots.length > 0 || distances.some(d => d !== null)) && (
+            <ParkingOccupancyChart 
+              slotId={spots.find(s => s.isActive)?.name || "A1"} 
+              data={history} 
+            />
+          )}
+          
+          {spots.length === 0 && distances.every(d => d === null) && (
+            <div className="text-center py-8 text-gray-400">
+              <p>No parking spots configured or active.</p>
+              <p className="text-sm mt-2">
+                Visit the <a href="/admin" className="text-indigo-400 hover:underline">admin dashboard</a> to set up parking spots.
+              </p>
+            </div>
+          )}
         </div>
       </main>
     </div>
