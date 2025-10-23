@@ -6,7 +6,8 @@ const char* ssid     = "Realme8";
 const char* password = "rajrabidas123";
 
 // ==== Your PC/Laptop IP where Next.js is running ====
-String serverURL = "http://10.19.4.172:3000/api/update";
+// String serverURL = "http://10.19.4.172:3000/api/update";
+String serverURL = "https://iot-smart-park-d157.vercel.app/api/update";
 
 // ==== LED pins ====
 const int led1 = 5;   // GPIO5

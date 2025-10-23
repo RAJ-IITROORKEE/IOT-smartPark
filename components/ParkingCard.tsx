@@ -15,6 +15,7 @@ import {
   Wifi,
   WifiOff,
   MinusCircle,
+  ExternalLink,
 } from "lucide-react";
 
 import { ParkingSpot } from "@/lib/types";
@@ -43,6 +44,28 @@ export default function ParkingCard({
   spotData,
 }: Readonly<Props>) {
   const [open, setOpen] = useState(false);
+  const [showGPS, setShowGPS] = useState(false);
+
+  // Extract GPS coordinates for Google Maps
+  const openGoogleMaps = () => {
+    let coordinates = gps;
+    
+    // If spotData has GPS coordinates, use those instead
+    if (spotData?.gpsCoordinates) {
+      coordinates = `${spotData.gpsCoordinates.latitude},${spotData.gpsCoordinates.longitude}`;
+    }
+    
+    const googleMapsUrl = `https://www.google.com/maps?q=${coordinates}`;
+    window.open(googleMapsUrl, '_blank');
+  };
+
+  // Get formatted GPS display
+  const getGPSDisplay = () => {
+    if (spotData?.gpsCoordinates) {
+      return `${spotData.gpsCoordinates.latitude.toFixed(4)}, ${spotData.gpsCoordinates.longitude.toFixed(4)}`;
+    }
+    return gps;
+  };
 
   // Use Firebase occupancy data if available, otherwise use legacy logic
   const occupied = spotData
@@ -120,10 +143,22 @@ export default function ParkingCard({
               <p className="text-xs font-medium text-gray-400 uppercase tracking-wider">
                 Location
               </p>
-              <p className="text-sm text-gray-300 mt-1 flex items-center gap-2 justify-end">
-                <MapPin className="w-4 h-4 text-pink-400" />
-                <span className="max-w-[120px] truncate">{gps}</span>
-              </p>
+              <div 
+                className="text-sm text-gray-300 mt-1 flex items-center gap-2 justify-end cursor-pointer hover:text-blue-400 transition-colors group/gps"
+                onClick={openGoogleMaps}
+                onMouseEnter={() => setShowGPS(true)}
+                onMouseLeave={() => setShowGPS(false)}
+                title="Click to open in Google Maps"
+              >
+                <MapPin className="w-4 h-4 text-pink-400 group-hover/gps:text-blue-400 transition-colors" />
+                <span className="max-w-[120px] truncate">{getGPSDisplay()}</span>
+                <ExternalLink className="w-3 h-3 opacity-0 group-hover/gps:opacity-100 transition-opacity" />
+              </div>
+              {showGPS && (
+                <div className="absolute right-2 top-full mt-1 bg-slate-800 border border-slate-600 rounded px-2 py-1 text-xs text-gray-200 z-10 shadow-lg">
+                  Click to open in Google Maps
+                </div>
+              )}
             </div>
           </div>
 

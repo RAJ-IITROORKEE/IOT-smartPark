@@ -12,10 +12,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // For development/demo, allow default admin credentials
-    if (username === "admin" && password === "admin123") {
+    // Use environment variables for admin credentials
+    const adminUsername = process.env.ADMIN_USERNAME || "admin";
+    const adminPassword = process.env.ADMIN_PASSWORD || "admin123";
+
+    if (username === adminUsername && password === adminPassword) {
       const token = sign(
-        { username: "admin", role: "admin" },
+        { username: adminUsername, role: "admin" },
         process.env.JWT_SECRET || "default-secret-key",
         { expiresIn: "1h" }
       );
@@ -23,7 +26,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({
         message: "Login successful",
         token,
-        user: { username: "admin", role: "admin" }
+        user: { username: adminUsername, role: "admin" }
       });
     }
 

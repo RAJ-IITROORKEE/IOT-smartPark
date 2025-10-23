@@ -368,6 +368,11 @@ export default function SpotsManagement() {
                         Position: Row {spot.position.row}, Col {spot.position.col}
                         {spot.sensorPin && ` • Pin: ${spot.sensorPin}`}
                         {spot.distance !== undefined && ` • Distance: ${spot.distance}cm`}
+                        {spot.gpsCoordinates && (
+                          <div className="mt-1">
+                            GPS: {spot.gpsCoordinates.latitude.toFixed(4)}, {spot.gpsCoordinates.longitude.toFixed(4)}
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -384,6 +389,20 @@ export default function SpotsManagement() {
                     >
                       {spot.isActive ? (spot.isOccupied ? "Occupied" : "Available") : "Inactive"}
                     </Badge>
+                    {spot.gpsCoordinates && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          const url = `https://www.google.com/maps?q=${spot.gpsCoordinates?.latitude},${spot.gpsCoordinates?.longitude}`;
+                          window.open(url, '_blank');
+                        }}
+                        className="text-blue-400 hover:text-blue-300"
+                        title="Open in Google Maps"
+                      >
+                        <MapPin className="h-4 w-4" />
+                      </Button>
+                    )}
                     <Button
                       size="sm"
                       variant="outline"

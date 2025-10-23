@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
+import { adminFirestore } from "@/lib/firebaseAdmin";
 
-// In-memory historical data storage
 interface ParkingDataPoint {
   timestamp: number;
   slotId: number;
@@ -9,9 +9,6 @@ interface ParkingDataPoint {
   date: string;
   time: string;
 }
-
-const historicalData: ParkingDataPoint[] = [];
-const MAX_HISTORY_SIZE = 1000; // Keep last 1000 data points
 
 // Store current sensor data into historical records
 export async function POST(req: NextRequest) {
@@ -25,7 +22,10 @@ export async function POST(req: NextRequest) {
       const date = now.toISOString().split('T')[0];
       const time = now.toTimeString().split(' ')[0];
 
-      // Save each sensor reading
+      // Create batch operations for all sensor readings
+      const batch = adminFirestore.batch();
+      const historyRef = adminFirestore.collection('parking-history');
+
       distances.forEach((distance: number | null, index: number) => {
         const dataPoint: ParkingDataPoint = {
           timestamp,
@@ -36,15 +36,29 @@ export async function POST(req: NextRequest) {
           time
         };
 
-        historicalData.push(dataPoint);
+        // Create a document for each data point
+        const docRef = historyRef.doc();
+        batch.set(docRef, dataPoint);
       });
 
-      // Keep only the most recent data points
-      if (historicalData.length > MAX_HISTORY_SIZE) {
-        historicalData.splice(0, historicalData.length - MAX_HISTORY_SIZE);
-      }
+      // Execute the batch write to Firebase
+      await batch.commit();
 
-      console.log(`📊 Saved ${distances.length} data points. Total history: ${historicalData.length}`);
+      console.log(`📊 Saved ${distances.length} data points to Firebase Firestore`);
+
+      // Clean up old data (keep last 7 days)
+      const weekAgo = timestamp - (7 * 24 * 60 * 60 * 1000);
+      const oldDataQuery = historyRef.where('timestamp', '<', weekAgo).limit(100);
+      const oldDataSnapshot = await oldDataQuery.get();
+
+      if (!oldDataSnapshot.empty) {
+        const deleteBatch = adminFirestore.batch();
+        oldDataSnapshot.docs.forEach(doc => {
+          deleteBatch.delete(doc.ref);
+        });
+        await deleteBatch.commit();
+        console.log(`🗑️ Cleaned up ${oldDataSnapshot.size} old data points`);
+      }
     }
 
     return NextResponse.json({ success: true });
@@ -66,20 +80,50 @@ export async function GET(req: NextRequest) {
 
     const cutoffTime = Date.now() - (hours * 60 * 60 * 1000);
     
-    let filteredData = historicalData.filter(point => point.timestamp > cutoffTime);
-    
+    // Query Firebase for historical data
+    const historyRef = adminFirestore.collection('parking-history');
+    let query = historyRef
+      .where('timestamp', '>', cutoffTime)
+      .orderBy('timestamp', 'desc')
+      .limit(1000); // Limit to prevent large responses
+
     if (slotId) {
-      filteredData = filteredData.filter(point => point.slotId === parseInt(slotId));
+      query = historyRef
+        .where('timestamp', '>', cutoffTime)
+        .where('slotId', '==', parseInt(slotId))
+        .orderBy('timestamp', 'desc')
+        .limit(1000);
     }
+
+    const snapshot = await query.get();
+    const filteredData: ParkingDataPoint[] = [];
+
+    snapshot.forEach(doc => {
+      const data = doc.data() as ParkingDataPoint;
+      filteredData.push(data);
+    });
+
+    // Sort by timestamp ascending for proper chart display
+    filteredData.sort((a, b) => a.timestamp - b.timestamp);
 
     // Group data by 5-minute intervals for better chart performance
     const groupedData = groupDataByInterval(filteredData, 5 * 60 * 1000); // 5 minutes
+
+    // Get the latest timestamp
+    const latestSnapshot = await historyRef
+      .orderBy('timestamp', 'desc')
+      .limit(1)
+      .get();
+    
+    const lastUpdate = !latestSnapshot.empty 
+      ? latestSnapshot.docs[0].data().timestamp 
+      : null;
 
     return NextResponse.json({
       data: groupedData,
       totalPoints: filteredData.length,
       timeRange: `${hours} hours`,
-      lastUpdate: historicalData.length > 0 ? historicalData[historicalData.length - 1].timestamp : null
+      lastUpdate
     });
   } catch (error) {
     console.error("Error retrieving parking data:", error);

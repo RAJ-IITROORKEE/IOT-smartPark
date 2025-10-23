@@ -255,9 +255,9 @@ void loop() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold">ESP32 Code Generator</h1>
+        <h1 className="text-3xl font-bold text-indigo-400">ESP32 Code Generator</h1>
         <div className="flex gap-2">
-          <Button onClick={generateArduinoCode} className="flex items-center gap-2">
+          <Button onClick={generateArduinoCode} className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700">
             <Zap className="h-4 w-4" />
             Generate Code
           </Button>
@@ -266,42 +266,45 @@ void loop() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Network Configuration */}
-        <Card>
+        <Card className="bg-slate-900 border-slate-800">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
+            <CardTitle className="flex items-center gap-2 text-indigo-400">
               <Wifi className="h-5 w-5" />
               Network Configuration
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
-              <Label htmlFor="ssid">WiFi SSID</Label>
+              <Label htmlFor="ssid" className="text-gray-300">WiFi SSID</Label>
               <Input
                 id="ssid"
                 value={networkConfig.ssid}
                 onChange={(e) => setNetworkConfig({ ...networkConfig, ssid: e.target.value })}
                 placeholder="Your WiFi network name"
+                className="bg-slate-800 border-slate-700 text-white"
               />
             </div>
             <div>
-              <Label htmlFor="password">WiFi Password</Label>
+              <Label htmlFor="password" className="text-gray-300">WiFi Password</Label>
               <Input
                 id="password"
                 type="password"
                 value={networkConfig.password}
                 onChange={(e) => setNetworkConfig({ ...networkConfig, password: e.target.value })}
                 placeholder="Your WiFi password"
+                className="bg-slate-800 border-slate-700 text-white"
               />
             </div>
             <div>
-              <Label htmlFor="serverip">Server IP Address</Label>
+              <Label htmlFor="serverip" className="text-gray-300">Server IP Address</Label>
               <Input
                 id="serverip"
                 value={networkConfig.serverIP}
                 onChange={(e) => setNetworkConfig({ ...networkConfig, serverIP: e.target.value })}
                 placeholder="192.168.1.100"
+                className="bg-slate-800 border-slate-700 text-white"
               />
-              <p className="text-sm text-gray-500 mt-1">
+              <p className="text-sm text-gray-400 mt-1">
                 Current server: {typeof window !== 'undefined' ? window.location.host : 'localhost:3000'}
               </p>
             </div>
@@ -309,21 +312,22 @@ void loop() {
         </Card>
 
         {/* Sensor Configuration */}
-        <Card>
+        <Card className="bg-slate-900 border-slate-800">
           <CardHeader>
-            <CardTitle>Sensor Configuration</CardTitle>
-            <Button onClick={addSensor} size="sm">Add Sensor</Button>
+            <CardTitle className="text-indigo-400">Sensor Configuration</CardTitle>
+            <Button onClick={addSensor} size="sm" className="bg-green-600 hover:bg-green-700">Add Sensor</Button>
           </CardHeader>
           <CardContent className="space-y-4">
             {sensors.map((sensor) => (
-              <div key={sensor.id} className="border rounded p-3 space-y-2">
+              <div key={sensor.id} className="border border-slate-700 bg-slate-800 rounded p-3 space-y-2">
                 <div className="flex justify-between items-center">
-                  <Label className="font-medium">Sensor {sensor.id}</Label>
+                  <Label className="font-medium text-gray-300">Sensor {sensor.id}</Label>
                   {sensors.length > 1 && (
                     <Button 
                       onClick={() => removeSensor(sensor.id)} 
                       variant="destructive" 
                       size="sm"
+                      className="bg-red-600 hover:bg-red-700"
                     >
                       Remove
                     </Button>
@@ -331,27 +335,30 @@ void loop() {
                 </div>
                 <div className="grid grid-cols-3 gap-2">
                   <div>
-                    <Label>Slot Name</Label>
+                    <Label className="text-gray-300">Slot Name</Label>
                     <Input
                       value={sensor.slotName}
                       onChange={(e) => updateSensor(sensor.id, 'slotName', e.target.value)}
                       placeholder="Slot A1"
+                      className="bg-slate-700 border-slate-600 text-white"
                     />
                   </div>
                   <div>
-                    <Label>Trig Pin</Label>
+                    <Label className="text-gray-300">Trig Pin</Label>
                     <Input
                       type="number"
                       value={sensor.trigPin}
                       onChange={(e) => updateSensor(sensor.id, 'trigPin', parseInt(e.target.value))}
+                      className="bg-slate-700 border-slate-600 text-white"
                     />
                   </div>
                   <div>
-                    <Label>Echo Pin</Label>
+                    <Label className="text-gray-300">Echo Pin</Label>
                     <Input
                       type="number"
                       value={sensor.echoPin}
                       onChange={(e) => updateSensor(sensor.id, 'echoPin', parseInt(e.target.value))}
+                      className="bg-slate-700 border-slate-600 text-white"
                     />
                   </div>
                 </div>
@@ -363,15 +370,15 @@ void loop() {
 
       {/* Generated Code Display */}
       {generatedCode && (
-        <Card>
+        <Card className="bg-slate-900 border-slate-800">
           <CardHeader>
-            <CardTitle>Generated ESP32 Code</CardTitle>
+            <CardTitle className="text-indigo-400">Generated ESP32 Code</CardTitle>
             <div className="flex gap-2">
-              <Button onClick={copyToClipboard} variant="outline" className="flex items-center gap-2">
+              <Button onClick={copyToClipboard} variant="outline" className="flex items-center gap-2 border-slate-600 text-gray-300 hover:bg-slate-800">
                 <Copy className="h-4 w-4" />
                 Copy Code
               </Button>
-              <Button onClick={downloadFile} variant="outline" className="flex items-center gap-2">
+              <Button onClick={downloadFile} variant="outline" className="flex items-center gap-2 border-slate-600 text-gray-300 hover:bg-slate-800">
                 <Download className="h-4 w-4" />
                 Download .ino
               </Button>
@@ -381,7 +388,7 @@ void loop() {
             <Textarea
               value={generatedCode}
               readOnly
-              className="font-mono text-sm h-96"
+              className="font-mono text-sm h-96 bg-slate-800 border-slate-700 text-gray-300"
             />
           </CardContent>
         </Card>
