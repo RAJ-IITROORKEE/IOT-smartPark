@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { ParkingSpotService } from "@/lib/firebase-service";
 
 // In-memory state
 const deviceState = {
@@ -34,6 +35,26 @@ export async function POST(req: NextRequest) {
     console.log("Parking Status:", occupiedSlots.map((occupied: boolean, i: number) => 
       `Slot ${i+1}: ${occupied ? 'OCCUPIED' : 'FREE'}`
     ).join(', '));
+
+    // Update Firebase database with occupancy status (async, don't wait)
+    try {
+      const spots = await ParkingSpotService.getAllSpots();
+      for (const [sensorIndex, distance] of body.distances.entries()) {
+        if (distance !== null) {
+          const spot = spots.find(s => s.sensorConfig?.sensorId === sensorIndex);
+          if (spot) {
+            await ParkingSpotService.updateSpotOccupancy(
+              spot.id, 
+              distance, 
+              spot.minThreshold || 20, 
+              spot.maxThreshold || 200
+            );
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Database occupancy update error:', error);
+    }
 
     // Save to historical data (async, don't wait)
     try {
