@@ -120,3 +120,40 @@
     @apply bg-background text-foreground;
   }
 }
+
+@layer utilities {
+  /* Custom responsive utilities */
+  .xs\:inline-flex {
+    @media (min-width: 375px) {
+      display: inline-flex;
+    }
+  }
+  
+  .xs\:hidden {
+    @media (min-width: 375px) {
+      display: none;
+    }
+  }
+  
+  .xs\:block {
+    @media (min-width: 375px) {
+      display: block;
+    }
+  }
+
+  /* Ensure mobile-first approach for better performance */
+  @media (max-width: 640px) {
+    .container {
+      padding-left: 1rem;
+      padding-right: 1rem;
+    }
+  }
+
+  /* Scrollable areas for mobile */
+  .mobile-scroll {
+    @media (max-width: 768px) {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+  }
+}

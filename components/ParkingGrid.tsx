@@ -37,11 +37,11 @@ export default function ParkingGrid({
           name: spot.name,
           installed: true,
           active: spot.isActive && active, // Combined with ESP32 connection status
-          occupied: spot.isOccupied || isOccupiedBySensor,
+          occupied: active && (spot.isOccupied || isOccupiedBySensor), // Only show occupied when active
           gps: spot.gpsCoordinates 
             ? `${spot.gpsCoordinates.latitude},${spot.gpsCoordinates.longitude}`
             : `26.91${20 + spot.position.row},75.78${70 + spot.position.col}`, // Generate GPS if not set
-          distance: currentDistance ?? spot.distance ?? null,
+          distance: active ? (currentDistance ?? spot.distance ?? null) : null, // Clear distance when inactive
           spotData: spot,
         };
       })
@@ -52,27 +52,27 @@ export default function ParkingGrid({
           name: "A1",
           installed: true,
           active: active && distances[0] !== null,
-          occupied: distances[0] !== null && distances[0] >= 20 && distances[0] <= 200,
+          occupied: active && distances[0] !== null && distances[0] >= 20 && distances[0] <= 200,
           gps: "26.9124,75.7873",
-          distance: distances[0] ?? null,
+          distance: active ? (distances[0] ?? null) : null,
         },
         {
           id: "legacy-A2", 
           name: "A2",
           installed: true,
           active: active && distances[1] !== null,
-          occupied: distances[1] !== null && distances[1] >= 20 && distances[1] <= 200,
+          occupied: active && distances[1] !== null && distances[1] >= 20 && distances[1] <= 200,
           gps: "26.9126,75.7875",
-          distance: distances[1] ?? null,
+          distance: active ? (distances[1] ?? null) : null,
         },
         {
           id: "legacy-A3",
           name: "A3", 
           installed: true,
           active: active && distances[2] !== null,
-          occupied: distances[2] !== null && distances[2] >= 20 && distances[2] <= 200,
+          occupied: active && distances[2] !== null && distances[2] >= 20 && distances[2] <= 200,
           gps: "26.9128,75.7877",
-          distance: distances[2] ?? null,
+          distance: active ? (distances[2] ?? null) : null,
         },
         {
           id: "legacy-B1",

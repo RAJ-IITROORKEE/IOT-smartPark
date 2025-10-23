@@ -142,36 +142,48 @@ export default function Page() {
   return (
     <div className="min-h-screen bg-slate-950 text-gray-100">
       <Header />
-      <main className="p-6 max-w-7xl mx-auto">
-        <div className="mb-6 flex items-center justify-between">
-          <div>
-            <h2 className="text-2xl font-semibold text-indigo-300">Parking Slots</h2>
+      <main className="p-4 sm:p-6 max-w-7xl mx-auto">
+        <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="min-w-0">
+            <h2 className="text-xl sm:text-2xl font-semibold text-indigo-300">Parking Slots</h2>
             <p className="text-sm text-gray-400">
               Real-time overview of {spots.length || 3} configured parking spots
             </p>
           </div>
-          <div className="text-right">
-            <div className="text-sm text-gray-400">
-              <div>Total: {spots.length || 3}</div>
-              <div className="text-green-400">
-                Available: {spots.length ? spots.filter(s => s.isActive && !s.isOccupied).length : 
-                  distances.filter((d, i) => {
-                    if (d === null) return false;
-                    const spot = spots.find(s => s.sensorConfig?.sensorId === i);
-                    const minThreshold = spot?.minThreshold || 20;
-                    const maxThreshold = spot?.maxThreshold || 200;
-                    return d < minThreshold || d > maxThreshold;
-                  }).length}
+          <div className="flex justify-between sm:justify-end sm:text-right">
+            <div className="text-sm text-gray-400 grid grid-cols-3 sm:block gap-4 sm:gap-0">
+              <div className="text-center sm:text-right">
+                <div className="text-xs text-gray-500 sm:hidden">Total</div>
+                <div className="sm:hidden text-gray-300">{spots.length || 3}</div>
+                <div className="hidden sm:block">Total: {spots.length || 3}</div>
               </div>
-              <div className="text-red-400">
-                Occupied: {spots.length ? spots.filter(s => s.isActive && s.isOccupied).length : 
-                  distances.filter((d, i) => {
-                    if (d === null) return false;
-                    const spot = spots.find(s => s.sensorConfig?.sensorId === i);
-                    const minThreshold = spot?.minThreshold || 20;
-                    const maxThreshold = spot?.maxThreshold || 200;
-                    return d >= minThreshold && d <= maxThreshold;
-                  }).length}
+              <div className="text-center sm:text-right">
+                <div className="text-xs text-gray-500 sm:hidden">Available</div>
+                <div className="text-green-400">
+                  <span className="hidden sm:inline">Available: </span>
+                  {!active ? 0 : spots.length ? spots.filter(s => s.isActive && !s.isOccupied).length : 
+                    distances.filter((d, i) => {
+                      if (d === null) return false;
+                      const spot = spots.find(s => s.sensorConfig?.sensorId === i);
+                      const minThreshold = spot?.minThreshold || 20;
+                      const maxThreshold = spot?.maxThreshold || 200;
+                      return d < minThreshold || d > maxThreshold;
+                    }).length}
+                </div>
+              </div>
+              <div className="text-center sm:text-right">
+                <div className="text-xs text-gray-500 sm:hidden">Occupied</div>
+                <div className="text-red-400">
+                  <span className="hidden sm:inline">Occupied: </span>
+                  {!active ? 0 : spots.length ? spots.filter(s => s.isActive && s.isOccupied).length : 
+                    distances.filter((d, i) => {
+                      if (d === null) return false;
+                      const spot = spots.find(s => s.sensorConfig?.sensorId === i);
+                      const minThreshold = spot?.minThreshold || 20;
+                      const maxThreshold = spot?.maxThreshold || 200;
+                      return d >= minThreshold && d <= maxThreshold;
+                    }).length}
+                </div>
               </div>
             </div>
           </div>
@@ -184,18 +196,20 @@ export default function Page() {
           spots={spots}
         />
 
-        <div className="mt-10">
+        <div className="mt-8 sm:mt-10">
           {/* Chart for first active spot */}
           {(spots.length > 0 || distances.some(d => d !== null)) && (
-            <ParkingOccupancyChart 
-              slotId={spots.find(s => s.isActive)?.name || "A1"} 
-              data={history} 
-            />
+            <div className="w-full overflow-hidden">
+              <ParkingOccupancyChart 
+                slotId={spots.find(s => s.isActive)?.name || "A1"} 
+                data={history} 
+              />
+            </div>
           )}
           
           {spots.length === 0 && distances.every(d => d === null) && (
-            <div className="text-center py-8 text-gray-400">
-              <p>No parking spots configured or active.</p>
+            <div className="text-center py-8 text-gray-400 px-4">
+              <p className="text-base sm:text-lg">No parking spots configured or active.</p>
               <p className="text-sm mt-2">
                 Visit the <a href="/admin" className="text-indigo-400 hover:underline">admin dashboard</a> to set up parking spots.
               </p>

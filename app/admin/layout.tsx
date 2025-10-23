@@ -23,8 +23,45 @@ interface AdminLayoutProps {
 export default function AdminLayout({ children }: AdminLayoutProps) {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
+
+  // Auto-collapse sidebar on mobile and handle screen size changes
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth >= 768) {
+        // On desktop, close mobile sidebar if it's open
+        setIsMobileSidebarOpen(false);
+      }
+    };
+
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // Close mobile sidebar when pressing escape key
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isMobileSidebarOpen) {
+        setIsMobileSidebarOpen(false);
+      }
+    };
+
+    if (isMobileSidebarOpen) {
+      document.addEventListener('keydown', handleKeyDown);
+      // Prevent body scroll when mobile sidebar is open
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = '';
+    };
+  }, [isMobileSidebarOpen]);
 
   const navigationItems = [
     { name: 'Dashboard', path: '/admin/dashboard', icon: LayoutDashboard },
@@ -97,24 +134,61 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
 
   // Show admin dashboard with sidebar navigation
   return (
-    <div className="min-h-screen bg-slate-950 text-gray-100 flex">
+    <div className="min-h-screen bg-slate-950 text-gray-100 flex relative">
+      {/* Mobile Overlay */}
+      {isMobileSidebarOpen && (
+        <div 
+          className="fixed inset-0 bg-black/50 md:hidden"
+          style={{ zIndex: 50 }}
+          onClick={() => setIsMobileSidebarOpen(false)}
+          onKeyDown={(e) => {
+            if (e.key === 'Escape') {
+              setIsMobileSidebarOpen(false);
+            }
+          }}
+          role="button"
+          tabIndex={0}
+          aria-label="Close sidebar"
+        />
+      )}
+
       {/* Sidebar */}
-      <div className={`bg-slate-900 border-r border-slate-800 transition-all duration-300 ${
-        isSidebarCollapsed ? 'w-16' : 'w-64'
-      } flex flex-col`}>
+      <aside 
+        className={`
+          bg-slate-900 border-r border-slate-800 transition-all duration-300 flex flex-col
+          ${isMobileSidebarOpen 
+            ? 'fixed inset-y-0 left-0 w-64 shadow-2xl z-50 md:hidden' 
+            : 'hidden'
+          }
+          md:flex md:relative md:inset-auto md:z-auto
+          ${isSidebarCollapsed ? 'md:w-16' : 'md:w-64'}
+        `}
+        style={isMobileSidebarOpen ? { zIndex: 51 } : {}}
+      >
         {/* Sidebar Header */}
         <div className="p-4 border-b border-slate-800">
           <div className="flex items-center justify-between">
-            {!isSidebarCollapsed && (
+            {(!isSidebarCollapsed || isMobileSidebarOpen) && (
               <h1 className="text-xl font-bold text-indigo-400">SmartPark</h1>
             )}
+            {/* Desktop Collapse Button */}
             <Button
               variant="ghost"
               size="sm"
               onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-              className="text-gray-400 hover:text-white hover:bg-slate-800"
+              className="hidden md:flex text-gray-400 hover:text-white hover:bg-slate-800"
             >
               {isSidebarCollapsed ? <Menu className="h-4 w-4" /> : <X className="h-4 w-4" />}
+            </Button>
+            {/* Mobile Close Button */}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setIsMobileSidebarOpen(false)}
+              className="md:hidden text-gray-400 hover:text-white hover:bg-slate-800"
+              title="Close navigation menu"
+            >
+              <X className="h-4 w-4" />
             </Button>
           </div>
         </div>
@@ -128,16 +202,19 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
             return (
               <button
                 key={item.path}
-                onClick={() => router.push(item.path)}
+                onClick={() => {
+                  router.push(item.path);
+                  setIsMobileSidebarOpen(false); // Close mobile menu on navigation
+                }}
                 className={`w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
                   isActive
                     ? "bg-indigo-600 text-white"
                     : "text-gray-300 hover:text-white hover:bg-slate-800"
-                } ${isSidebarCollapsed ? 'justify-center' : ''}`}
-                title={isSidebarCollapsed ? item.name : ''}
+                } ${isSidebarCollapsed && !isMobileSidebarOpen ? 'justify-center' : ''}`}
+                title={isSidebarCollapsed && !isMobileSidebarOpen ? item.name : ''}
               >
                 <Icon className="h-4 w-4 flex-shrink-0" />
-                {!isSidebarCollapsed && <span>{item.name}</span>}
+                {(!isSidebarCollapsed || isMobileSidebarOpen) && <span>{item.name}</span>}
               </button>
             );
           })}
@@ -146,57 +223,83 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         {/* Footer Actions */}
         <div className="p-4 border-t border-slate-800 space-y-2">
           <button
-            onClick={() => router.push("/")}
+            onClick={() => {
+              router.push("/");
+              setIsMobileSidebarOpen(false);
+            }}
             className={`w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium text-gray-300 hover:text-white hover:bg-slate-800 transition-colors ${
-              isSidebarCollapsed ? 'justify-center' : ''
+              isSidebarCollapsed && !isMobileSidebarOpen ? 'justify-center' : ''
             }`}
-            title={isSidebarCollapsed ? 'View Site' : ''}
+            title={isSidebarCollapsed && !isMobileSidebarOpen ? 'View Site' : ''}
           >
             <Home className="h-4 w-4 flex-shrink-0" />
-            {!isSidebarCollapsed && <span>View Site</span>}
+            {(!isSidebarCollapsed || isMobileSidebarOpen) && <span>View Site</span>}
           </button>
           <button
-            onClick={handleLogout}
+            onClick={() => {
+              handleLogout();
+              setIsMobileSidebarOpen(false);
+            }}
             className={`w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium hover:bg-slate-800 text-white transition-colors ${
-              isSidebarCollapsed ? 'justify-center' : ''
+              isSidebarCollapsed && !isMobileSidebarOpen ? 'justify-center' : ''
             }`}
-            title={isSidebarCollapsed ? 'Logout' : ''}
+            title={isSidebarCollapsed && !isMobileSidebarOpen ? 'Logout' : ''}
           >
             <LogOut className="h-4 w-4 flex-shrink-0" />
-            {!isSidebarCollapsed && <span>Logout</span>}
+            {(!isSidebarCollapsed || isMobileSidebarOpen) && <span>Logout</span>}
           </button>
         </div>
-      </div>
+      </aside>
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col min-w-0">
         {/* Top Bar */}
-        <header className="bg-slate-900 border-b border-slate-800 px-6 py-4">
+        <header className="bg-slate-900 border-b border-slate-800 px-4 sm:px-6 py-4">
           <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-2xl font-semibold text-white">
-                {navigationItems.find(item => pathname.startsWith(item.path))?.name || 'Admin Panel'}
-              </h2>
+            <div className="flex items-center gap-3 min-w-0">
+              {/* Mobile Menu Button */}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setIsMobileSidebarOpen(true)}
+                className="md:hidden p-2 text-gray-400 hover:text-white hover:bg-slate-800"
+                title="Open navigation menu"
+              >
+                <Menu className="h-4 w-4" />
+              </Button>
+              
+              <div className="min-w-0">
+                <h2 className="text-lg sm:text-xl md:text-2xl font-semibold text-white truncate">
+                  <span className="hidden sm:inline">
+                    {navigationItems.find(item => pathname.startsWith(item.path))?.name || 'Admin Panel'}
+                  </span>
+                  <span className="sm:hidden">
+                    Admin
+                  </span>
+                </h2>
+              </div>
             </div>
-            <div className="text-sm text-gray-400">
+            
+            <div className="text-xs sm:text-sm text-gray-400 hidden xs:block">
               Welcome back, {localStorage.getItem("admin_token") ? "Admin" : "Guest"}
             </div>
           </div>
         </header>
 
         {/* Main Content */}
-        <main className="flex-1 p-6 overflow-auto">
+        <main className="flex-1 p-4 sm:p-6 overflow-auto">
           {children}
         </main>
 
         {/* Footer */}
-        <footer className="border-t border-slate-800 bg-slate-900 px-6 py-4">
+        <footer className="border-t border-slate-800 bg-slate-900 px-4 sm:px-6 py-3 sm:py-4">
           <div className="text-center space-y-1">
-            <p className="text-gray-400 text-sm">
+            <p className="text-gray-400 text-xs sm:text-sm">
               © {new Date().getFullYear()} SmartPark IoT System. All rights reserved.
             </p>
             <div className="flex items-center justify-center gap-2 text-xs">
-              <span className="text-gray-500">Design and developed by</span>
+              <span className="text-gray-500 hidden sm:inline">Design and developed by</span>
+              <span className="text-gray-500 sm:hidden">By</span>
               <a 
                 href="https://rajrabidas.me" 
                 target="_blank" 

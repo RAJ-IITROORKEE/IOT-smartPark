@@ -96,58 +96,92 @@ export default function AdminDashboard() {
         
         // Calculate stats from live data using configured spots thresholds
         if (liveData && liveData.distances && spotsData.length > 0) {
-          let liveOccupied = 0;
-          let liveAvailable = 0;
-          let inactive = 0;
-          
-          liveData.distances.forEach((distance: number | null, index: number) => {
-            const spot = spotsData.find((s: ParkingSpot) => s.sensorConfig?.sensorId === index);
-            const minThreshold = spot?.minThreshold || 20;
-            const maxThreshold = spot?.maxThreshold || 200;
+          // Check if ESP32 is active/connected
+          if (liveData.active === 0) {
+            // ESP32 is disconnected, show 0 for all except total
+            setStats(prev => ({
+              ...prev,
+              total: 3, // Always show 3 total slots
+              occupied: 0,
+              available: 0,
+              inactive: 3
+            }));
+          } else {
+            let liveOccupied = 0;
+            let liveAvailable = 0;
+            let inactive = 0;
             
-            if (distance === null) {
-              inactive++;
-            } else if (distance >= minThreshold && distance <= maxThreshold) {
-              liveOccupied++;
-            } else {
-              liveAvailable++;
-            }
-          });
-          
-          setStats(prev => ({
-            ...prev,
-            total: liveData.distances.length,
-            occupied: liveOccupied,
-            available: liveAvailable,
-            inactive
-          }));
+            liveData.distances.forEach((distance: number | null, index: number) => {
+              const spot = spotsData.find((s: ParkingSpot) => s.sensorConfig?.sensorId === index);
+              const minThreshold = spot?.minThreshold || 20;
+              const maxThreshold = spot?.maxThreshold || 200;
+              
+              if (distance === null) {
+                inactive++;
+              } else if (distance >= minThreshold && distance <= maxThreshold) {
+                liveOccupied++;
+              } else {
+                liveAvailable++;
+              }
+            });
+            
+            setStats(prev => ({
+              ...prev,
+              total: Math.max(liveData.distances.length, 3), // Ensure at least 3 slots shown
+              occupied: liveOccupied,
+              available: liveAvailable,
+              inactive
+            }));
+          }
         } else if (liveData && liveData.distances) {
           // Fallback to legacy threshold for backward compatibility
-          const liveOccupied = liveData.distances.filter((d: number | null) => d !== null && d >= 20 && d <= 200).length;
-          const liveAvailable = liveData.distances.filter((d: number | null) => d !== null && (d < 20 || d > 200)).length;
-          const inactive = liveData.distances.filter((d: number | null) => d === null).length;
-          
-          setStats(prev => ({
-            ...prev,
-            total: liveData.distances.length,
-            occupied: liveOccupied,
-            available: liveAvailable,
-            inactive
-          }));
+          if (liveData.active === 0) {
+            // ESP32 is disconnected
+            setStats(prev => ({
+              ...prev,
+              total: 3,
+              occupied: 0,
+              available: 0,
+              inactive: 3
+            }));
+          } else {
+            const liveOccupied = liveData.distances.filter((d: number | null) => d !== null && d >= 20 && d <= 200).length;
+            const liveAvailable = liveData.distances.filter((d: number | null) => d !== null && (d < 20 || d > 200)).length;
+            const inactive = liveData.distances.filter((d: number | null) => d === null).length;
+            
+            setStats(prev => ({
+              ...prev,
+              total: Math.max(liveData.distances.length, 3),
+              occupied: liveOccupied,
+              available: liveAvailable,
+              inactive
+            }));
+          }
         } else {
-          // Fallback to Firebase data
-          const total = spotsData.length;
-          const occupied = spotsData.filter((spot: ParkingSpot) => spot.isOccupied && spot.isActive).length;
-          const available = spotsData.filter((spot: ParkingSpot) => !spot.isOccupied && spot.isActive).length;
-          const inactive = spotsData.filter((spot: ParkingSpot) => !spot.isActive).length;
-          
-          setStats(prev => ({
-            ...prev,
-            total,
-            occupied,
-            available,
-            inactive
-          }));
+          // Fallback to Firebase data or show default when no data available
+          if (spotsData.length === 0) {
+            // No spots configured, show default 3 slots as inactive
+            setStats(prev => ({
+              ...prev,
+              total: 3,
+              occupied: 0,
+              available: 0,
+              inactive: 3
+            }));
+          } else {
+            const total = spotsData.length;
+            const occupied = spotsData.filter((spot: ParkingSpot) => spot.isOccupied && spot.isActive).length;
+            const available = spotsData.filter((spot: ParkingSpot) => !spot.isOccupied && spot.isActive).length;
+            const inactive = spotsData.filter((spot: ParkingSpot) => !spot.isActive).length;
+            
+            setStats(prev => ({
+              ...prev,
+              total,
+              occupied,
+              available,
+              inactive
+            }));
+          }
         }
       }
     } catch (error) {
