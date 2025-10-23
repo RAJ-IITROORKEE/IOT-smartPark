@@ -137,6 +137,9 @@ export default function ESP32TestPage() {
       }
     } catch (error) {
       addLog("✗ Error sending LED command");
+    }
+  };
+
   useEffect(() => {
     // Auto-refresh data every 2 seconds for better real-time monitoring
     const interval = setInterval(() => {
