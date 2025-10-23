@@ -18,10 +18,10 @@ export async function POST(req: NextRequest) {
     deviceState.timestamp = Date.now();
     console.log("ESP32 -> Distances:", body.distances);
     
-    // Smart parking logic: distance < 10cm = occupied
+    // Smart parking logic: distance between 20cm to 200cm = occupied
     const occupiedSlots = body.distances.map((distance: number | null) => {
       if (distance === null) return false;
-      return distance < 10; // 10cm threshold
+      return distance >= 20 && distance <= 200; // 20-200cm threshold for occupied
     });
     
     // Update LEDs based on parking status

@@ -31,18 +31,27 @@ export async function PUT(
 ) {
   try {
     const body = await request.json();
-    const updates = {
+    const updates: Record<string, any> = {
       name: body.name,
-      position: body.position && { row: Number(body.position.row), col: Number(body.position.col) },
-      sensorPin: body.sensorPin ? Number(body.sensorPin) : undefined,
-      threshold: body.threshold ? Number(body.threshold) : undefined,
+      position: body.row && body.col ? { row: Number(body.row), col: Number(body.col) } : undefined,
+      gpsCoordinates: body.latitude && body.longitude ? {
+        latitude: Number(body.latitude),
+        longitude: Number(body.longitude)
+      } : undefined,
+      sensorConfig: body.trigPin && body.echoPin && body.sensorId !== undefined ? {
+        trigPin: Number(body.trigPin),
+        echoPin: Number(body.echoPin),
+        sensorId: Number(body.sensorId)
+      } : undefined,
+      minThreshold: body.threshold ? Number(body.threshold) : undefined,
+      maxThreshold: body.maxThreshold ? Number(body.maxThreshold) : undefined,
       isActive: body.isActive !== undefined ? Boolean(body.isActive) : undefined,
     };
 
     // Remove undefined fields
     Object.keys(updates).forEach(key => {
-      if (updates[key as keyof typeof updates] === undefined) {
-        delete updates[key as keyof typeof updates];
+      if (updates[key] === undefined) {
+        delete updates[key];
       }
     });
 

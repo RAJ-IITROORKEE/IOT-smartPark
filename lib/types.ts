@@ -20,8 +20,18 @@ export interface ParkingSpot {
   isOccupied: boolean;
   lastUpdate: Timestamp;
   distance?: number;
-  threshold: number; // Distance threshold to determine occupancy
+  minThreshold: number; // Minimum distance for occupancy (20cm)
+  maxThreshold: number; // Maximum distance for occupancy (200cm)
   isActive: boolean;
+  esp32Config?: {
+    deviceId?: string;
+    wifiSSID?: string;
+    serverURL?: string;
+    ledConfig?: {
+      led1Pin: number;
+      led2Pin: number;
+    };
+  };
   createdAt: Timestamp;
   updatedAt: Timestamp;
 }

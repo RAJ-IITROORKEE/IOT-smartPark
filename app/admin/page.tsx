@@ -100,9 +100,9 @@ export default function AdminLoginPage() {
           </form>
           
           {/* Development hint */}
-          <div className="mt-6 p-3 bg-yellow-900/20 rounded text-yellow-400 text-xs">
-            <strong>Development Mode:</strong> Default credentials are admin/admin123
-          </div>
+          {/* <div className="mt-6 p-3 bg-yellow-900/20 rounded text-yellow-400 text-xs">
+            <strong>Development Mode:</strong> 
+          </div> */}
         </CardContent>
       </Card>
     </div>

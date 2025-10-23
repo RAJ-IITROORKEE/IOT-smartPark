@@ -100,9 +100,9 @@ export class ParkingSpotService {
     }
   }
 
-  static async updateSpotOccupancy(id: string, distance: number, threshold: number): Promise<boolean> {
+  static async updateSpotOccupancy(id: string, distance: number, minThreshold: number = 20, maxThreshold: number = 200): Promise<boolean> {
     try {
-      const isOccupied = distance < threshold;
+      const isOccupied = distance >= minThreshold && distance <= maxThreshold;
       const docRef = doc(clientDb, PARKING_SPOTS_COLLECTION, id);
       await updateDoc(docRef, {
         distance,

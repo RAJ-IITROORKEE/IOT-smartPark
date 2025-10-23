@@ -12,7 +12,8 @@ import {
   LogOut, 
   Home, 
   Menu, 
-  X 
+  X,
+  Database
 } from "lucide-react";
 
 interface AdminLayoutProps {
@@ -31,6 +32,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     { name: 'Sensors', path: '/admin/sensors', icon: Cpu },
     { name: 'ESP32 Test', path: '/admin/esp32-test', icon: Wifi },
     { name: 'Code Generator', path: '/admin/code-generator', icon: Code },
+    { name: 'Initialize DB', path: '/admin/initialize', icon: Database },
   ];
 
   useEffect(() => {
@@ -155,7 +157,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
           </button>
           <button
             onClick={handleLogout}
-            className={`w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium bg-red-800 hover:bg-red-700 text-white transition-colors ${
+            className={`w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium hover:bg-slate-800 text-white transition-colors ${
               isSidebarCollapsed ? 'justify-center' : ''
             }`}
             title={isSidebarCollapsed ? 'Logout' : ''}

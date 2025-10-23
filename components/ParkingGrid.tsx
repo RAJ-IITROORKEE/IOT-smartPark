@@ -27,20 +27,28 @@ export default function ParkingGrid({
 }) {
   // Convert Firebase spots to legacy slot format for backward compatibility
   const slots: Slot[] = spots.length > 0 
-    ? spots.map((spot, index) => ({
-        id: spot.id,
-        name: spot.name,
-        installed: true,
-        active: spot.isActive && active, // Combined with ESP32 connection status
-        occupied: spot.isOccupied || (distances[index] !== null && distances[index] < spot.threshold),
-        gps: spot.gpsCoordinates 
-          ? `${spot.gpsCoordinates.latitude},${spot.gpsCoordinates.longitude}`
-          : `26.91${20 + spot.position.row},75.78${70 + spot.position.col}`, // Generate GPS if not set
-        distance: distances[index] ?? spot.distance ?? null,
-        sensorPin: spot.sensorConfig?.sensorId, // Use sensorId as pin reference
-        threshold: spot.threshold,
-        spotData: spot,
-      }))
+    ? spots.map((spot, index) => {
+        const sensorIndex = spot.sensorConfig?.sensorId ?? index;
+        const currentDistance = distances[sensorIndex];
+        const isOccupiedBySensor = currentDistance !== null && 
+          currentDistance >= (spot.minThreshold || 20) && 
+          currentDistance <= (spot.maxThreshold || 200);
+        
+        return {
+          id: spot.id,
+          name: spot.name,
+          installed: true,
+          active: spot.isActive && active, // Combined with ESP32 connection status
+          occupied: spot.isOccupied || isOccupiedBySensor,
+          gps: spot.gpsCoordinates 
+            ? `${spot.gpsCoordinates.latitude},${spot.gpsCoordinates.longitude}`
+            : `26.91${20 + spot.position.row},75.78${70 + spot.position.col}`, // Generate GPS if not set
+          distance: currentDistance ?? spot.distance ?? null,
+          sensorPin: spot.sensorConfig?.sensorId, // Use sensorId as pin reference
+          threshold: spot.minThreshold || 20, // Use minThreshold for display
+          spotData: spot,
+        };
+      })
     : [
         // Fallback to legacy slots if no Firebase data
         {

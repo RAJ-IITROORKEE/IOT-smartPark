@@ -27,8 +27,6 @@ type Props = {
   installed?: boolean;
   active?: boolean;
   occupied?: boolean;
-  sensorPin?: number;
-  threshold?: number;
   spotData?: ParkingSpot;
 };
 
@@ -39,8 +37,6 @@ export default function ParkingCard({
   installed = false,
   active = false,
   occupied: propOccupied = false,
-  sensorPin,
-  threshold = 10,
   spotData,
 }: Readonly<Props>) {
   const [open, setOpen] = useState(false);
@@ -70,7 +66,7 @@ export default function ParkingCard({
   // Use Firebase occupancy data if available, otherwise use legacy logic
   const occupied = spotData
     ? spotData.isOccupied
-    : propOccupied || (installed && active && distanceCm !== null && distanceCm < threshold);
+    : propOccupied || (installed && active && distanceCm !== null && distanceCm >= 20 && distanceCm <= 200);
 
   // Calculate status text
   const getStatusText = () => {

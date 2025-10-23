@@ -18,7 +18,19 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { name, row, col, sensorPin, threshold = 10, isActive = true } = body;
+    const { 
+      name, 
+      row, 
+      col, 
+      latitude,
+      longitude,
+      trigPin,
+      echoPin,
+      sensorId,
+      minThreshold = 20, 
+      maxThreshold = 200,
+      isActive = true 
+    } = body;
 
     if (!name || !row || !col) {
       return NextResponse.json(
@@ -30,10 +42,19 @@ export async function POST(request: NextRequest) {
     const spotData = {
       name,
       position: { row: Number(row), col: Number(col) },
-      sensorPin: sensorPin ? Number(sensorPin) : undefined,
+      gpsCoordinates: latitude && longitude ? {
+        latitude: Number(latitude),
+        longitude: Number(longitude)
+      } : undefined,
+      sensorConfig: trigPin && echoPin && sensorId !== undefined ? {
+        trigPin: Number(trigPin),
+        echoPin: Number(echoPin),
+        sensorId: Number(sensorId)
+      } : undefined,
       isOccupied: false,
       lastUpdate: Timestamp.now(),
-      threshold: Number(threshold),
+      minThreshold: Number(minThreshold),
+      maxThreshold: Number(maxThreshold),
       isActive: Boolean(isActive),
     };
 

@@ -19,7 +19,8 @@ interface SpotFormData {
   trigPin: number | undefined;
   echoPin: number | undefined;
   sensorId: number | undefined;
-  threshold: number;
+  minThreshold: number;
+  maxThreshold: number;
   isActive: boolean;
 }
 
@@ -37,7 +38,8 @@ export default function SpotsManagement() {
     trigPin: undefined,
     echoPin: undefined,
     sensorId: undefined,
-    threshold: 10,
+    minThreshold: 20,
+    maxThreshold: 200,
     isActive: true,
   });
 
@@ -72,7 +74,8 @@ export default function SpotsManagement() {
         trigPin: formData.trigPin,
         echoPin: formData.echoPin,
         sensorId: formData.sensorId,
-        threshold: formData.threshold,
+        minThreshold: formData.minThreshold,
+        maxThreshold: formData.maxThreshold,
         isActive: formData.isActive,
       };
 
@@ -111,7 +114,8 @@ export default function SpotsManagement() {
       trigPin: spot.sensorConfig?.trigPin,
       echoPin: spot.sensorConfig?.echoPin,
       sensorId: spot.sensorConfig?.sensorId,
-      threshold: spot.threshold,
+      minThreshold: spot.minThreshold || 20,
+      maxThreshold: spot.maxThreshold || 200,
       isActive: spot.isActive,
     });
     setShowForm(true);
@@ -144,7 +148,8 @@ export default function SpotsManagement() {
       trigPin: undefined,
       echoPin: undefined,
       sensorId: undefined,
-      threshold: 10,
+      minThreshold: 20,
+      maxThreshold: 200,
       isActive: true,
     });
   };
@@ -305,18 +310,37 @@ export default function SpotsManagement() {
                     required
                   />
                 </div>
-                <div>
-                  <Label htmlFor="threshold" className="text-gray-300">Distance Threshold (cm)</Label>
-                  <Input
-                    id="threshold"
-                    type="number"
-                    min="1"
-                    value={formData.threshold}
-                    onChange={(e) => setFormData({ ...formData, threshold: Number(e.target.value) })}
-                    className="bg-slate-800 border-slate-700 text-white"
-                    required
-                  />
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="minThreshold" className="text-gray-300">Min Threshold (cm)</Label>
+                    <Input
+                      id="minThreshold"
+                      type="number"
+                      min="1"
+                      value={formData.minThreshold}
+                      onChange={(e) => setFormData({ ...formData, minThreshold: Number(e.target.value) })}
+                      className="bg-slate-800 border-slate-700 text-white"
+                      placeholder="20"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="maxThreshold" className="text-gray-300">Max Threshold (cm)</Label>
+                    <Input
+                      id="maxThreshold"
+                      type="number"
+                      min="1"
+                      value={formData.maxThreshold}
+                      onChange={(e) => setFormData({ ...formData, maxThreshold: Number(e.target.value) })}
+                      className="bg-slate-800 border-slate-700 text-white"
+                      placeholder="200"
+                      required
+                    />
+                  </div>
                 </div>
+                <p className="text-sm text-gray-400 -mt-2">
+                  Occupancy detected when distance is between min and max thresholds (e.g., 20-200cm)
+                </p>
                 <div className="flex items-center space-x-2">
                   <input
                     id="isActive"
@@ -366,11 +390,16 @@ export default function SpotsManagement() {
                       <h3 className="font-medium text-white">{spot.name}</h3>
                       <div className="text-sm text-gray-400">
                         Position: Row {spot.position.row}, Col {spot.position.col}
-                        {spot.sensorPin && ` • Pin: ${spot.sensorPin}`}
+                        {spot.sensorConfig?.sensorId !== undefined && ` • Sensor ID: ${spot.sensorConfig.sensorId}`}
                         {spot.distance !== undefined && ` • Distance: ${spot.distance}cm`}
                         {spot.gpsCoordinates && (
                           <div className="mt-1">
                             GPS: {spot.gpsCoordinates.latitude.toFixed(4)}, {spot.gpsCoordinates.longitude.toFixed(4)}
+                          </div>
+                        )}
+                        {spot.sensorConfig && (
+                          <div className="mt-1">
+                            Pins: Trig {spot.sensorConfig.trigPin}, Echo {spot.sensorConfig.echoPin}
                           </div>
                         )}
                       </div>

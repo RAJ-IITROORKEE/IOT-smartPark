@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
           timestamp,
           slotId: index + 1,
           distance,
-          isOccupied: distance !== null && distance < 10,
+          isOccupied: distance !== null && distance >= 20 && distance <= 200,
           date,
           time
         };
