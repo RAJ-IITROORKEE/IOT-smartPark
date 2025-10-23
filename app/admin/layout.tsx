@@ -188,6 +188,31 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         <main className="flex-1 p-6 overflow-auto">
           {children}
         </main>
+
+        {/* Footer */}
+        <footer className="border-t border-slate-800 bg-slate-900 px-6 py-4">
+          <div className="text-center space-y-1">
+            <p className="text-gray-400 text-sm">
+              © {new Date().getFullYear()} SmartPark IoT System. All rights reserved.
+            </p>
+            <div className="flex items-center justify-center gap-2 text-xs">
+              <span className="text-gray-500">Design and developed by</span>
+              <a 
+                href="https://rajrabidas.me" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="text-indigo-400 hover:text-indigo-300 transition-colors flex items-center gap-1"
+              >
+                <svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <circle cx="12" cy="12" r="10"/>
+                  <path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/>
+                  <path d="M2 12h20"/>
+                </svg>
+                Raj Rabidas
+              </a>
+            </div>
+          </div>
+        </footer>
       </div>
     </div>
   );

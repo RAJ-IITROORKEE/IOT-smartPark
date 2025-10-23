@@ -26,18 +26,35 @@ const SYSTEM_CONFIG_COLLECTION = "system_config";
 export class ParkingSpotService {
   static async getAllSpots(): Promise<ParkingSpot[]> {
     try {
-      const spotsQuery = query(
-        collection(clientDb, PARKING_SPOTS_COLLECTION),
-        orderBy("position.row"),
-        orderBy("position.col")
-      );
-      const snapshot = await getDocs(spotsQuery);
-      return snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      } as ParkingSpot));
+      console.log("🔍 Fetching parking spots from collection:", PARKING_SPOTS_COLLECTION);
+      
+      // Simple query without compound ordering to avoid index requirements
+      const spotsCollection = collection(clientDb, PARKING_SPOTS_COLLECTION);
+      const snapshot = await getDocs(spotsCollection);
+      
+      console.log(`📊 Found ${snapshot.size} documents in parking_spots collection`);
+      
+      const spots = snapshot.docs.map(doc => {
+        const data = doc.data();
+        console.log(`📄 Document ${doc.id}:`, data);
+        return {
+          id: doc.id,
+          ...data
+        } as ParkingSpot;
+      });
+      
+      // Sort in memory instead of using Firestore compound index
+      const sortedSpots = spots.sort((a, b) => {
+        if (a.position?.row !== b.position?.row) {
+          return (a.position?.row || 0) - (b.position?.row || 0);
+        }
+        return (a.position?.col || 0) - (b.position?.col || 0);
+      });
+      
+      console.log("✅ Returning sorted spots:", sortedSpots);
+      return sortedSpots;
     } catch (error) {
-      console.error("Error fetching parking spots:", error);
+      console.error("❌ Error fetching parking spots:", error);
       return [];
     }
   }
@@ -62,15 +79,24 @@ export class ParkingSpotService {
 
   static async createSpot(spotData: Omit<ParkingSpot, "id" | "createdAt" | "updatedAt">): Promise<string | null> {
     try {
+      console.log("🚀 Creating new parking spot:", spotData);
+      
       const now = Timestamp.now();
-      const docRef = await addDoc(collection(clientDb, PARKING_SPOTS_COLLECTION), {
+      const fullSpotData = {
         ...spotData,
         createdAt: now,
         updatedAt: now
-      });
+      };
+      
+      console.log("📝 Full spot data to save:", fullSpotData);
+      
+      const docRef = await addDoc(collection(clientDb, PARKING_SPOTS_COLLECTION), fullSpotData);
+      
+      console.log("✅ Successfully created parking spot with ID:", docRef.id);
       return docRef.id;
     } catch (error) {
-      console.error("Error creating parking spot:", error);
+      console.error("❌ Error creating parking spot:", error);
+      console.error("Error details:", error);
       return null;
     }
   }

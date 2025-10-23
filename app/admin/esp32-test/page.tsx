@@ -238,30 +238,21 @@ export default function ESP32TestPage() {
             <h3 className="text-lg font-medium text-indigo-400 mb-3">LED Control</h3>
             <div className="flex flex-wrap gap-3">
               <Button
-                onClick={() => controlLED(1, 0, "LED1 ON, LED2 OFF")}
-                className="bg-yellow-600 hover:bg-yellow-700"
+                onClick={() => controlLED(0, 1, "LED1 ON")}
+                className="bg-green-600 hover:bg-green-700"
               >
                 LED1 ON
               </Button>
               <Button
-                onClick={() => controlLED(0, 1, "LED1 OFF, LED2 ON")}
-                className="bg-orange-600 hover:bg-orange-700"
-              >
-                LED2 ON
-              </Button>
-              <Button
-                onClick={() => controlLED(1, 1, "Both LEDs ON")}
-                className="bg-red-600 hover:bg-red-700"
-              >
-                Both ON
-              </Button>
-              <Button
-                onClick={() => controlLED(0, 0, "Both LEDs OFF")}
+                onClick={() => controlLED(0, 0, "LED1 OFF")}
                 className="bg-gray-600 hover:bg-gray-700"
               >
-                Both OFF
+                LED1 OFF
               </Button>
             </div>
+            <p className="text-sm text-gray-400 mt-2">
+              LED1 corresponds to LED2 pin on ESP32 (previous LED1 removed)
+            </p>
           </div>
         </CardContent>
       </Card>

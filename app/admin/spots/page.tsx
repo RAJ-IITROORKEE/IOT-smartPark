@@ -49,10 +49,17 @@ export default function SpotsManagement() {
 
   const fetchSpots = async () => {
     try {
+      console.log("Fetching parking spots...");
       const response = await fetch("/api/parking-spots");
+      
       if (response.ok) {
         const data = await response.json();
+        console.log("Received spots data:", data);
         setSpots(data.spots || []);
+      } else {
+        console.error("Failed to fetch spots:", response.status, response.statusText);
+        const errorData = await response.text();
+        console.error("Error response:", errorData);
       }
     } catch (error) {
       console.error("Error fetching spots:", error);
@@ -372,8 +379,18 @@ export default function SpotsManagement() {
         </CardHeader>
         <CardContent>
           {spots.length === 0 ? (
-            <div className="text-center py-8 text-gray-400">
-              No parking spots configured. Add some spots to get started.
+            <div className="text-center py-8">
+              <div className="text-gray-400 mb-4">
+                No parking spots configured. Add some spots to get started.
+              </div>
+              <div className="space-y-2">
+                <p className="text-sm text-yellow-400">
+                  💡 Tip: Visit the <a href="/admin/initialize" className="underline hover:text-yellow-300">Initialize page</a> to create default parking spots
+                </p>
+                <p className="text-xs text-gray-500">
+                  Or use the &ldquo;Add Spot&rdquo; button above to create spots manually
+                </p>
+              </div>
             </div>
           ) : (
             <div className="space-y-4">
@@ -418,6 +435,19 @@ export default function SpotsManagement() {
                     >
                       {spot.isActive ? (spot.isOccupied ? "Occupied" : "Available") : "Inactive"}
                     </Badge>
+                    {spot.sensorConfig && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          alert(`ESP32 Pin Configuration for ${spot.name}:\n\nTrigger Pin: ${spot.sensorConfig?.trigPin}\nEcho Pin: ${spot.sensorConfig?.echoPin}\nSensor ID: ${spot.sensorConfig?.sensorId}\n\nThresholds: ${spot.minThreshold || 20}cm - ${spot.maxThreshold || 200}cm`);
+                        }}
+                        className="text-yellow-400 hover:text-yellow-300"
+                        title="Show ESP32 Pin Configuration"
+                      >
+                        <Settings className="h-4 w-4" />
+                      </Button>
+                    )}
                     {spot.gpsCoordinates && (
                       <Button
                         size="sm"

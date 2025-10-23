@@ -11,8 +11,6 @@ type Slot = {
   occupied: boolean;
   gps?: string;
   distance?: number | null;
-  sensorPin?: number;
-  threshold: number;
   spotData?: ParkingSpot;
 };
 
@@ -20,11 +18,11 @@ export default function ParkingGrid({
   distances,
   active,
   spots = [],
-}: {
+}: Readonly<{
   distances: (number | null)[];
   active: boolean;
   spots?: ParkingSpot[];
-}) {
+}>) {
   // Convert Firebase spots to legacy slot format for backward compatibility
   const slots: Slot[] = spots.length > 0 
     ? spots.map((spot, index) => {
@@ -44,8 +42,6 @@ export default function ParkingGrid({
             ? `${spot.gpsCoordinates.latitude},${spot.gpsCoordinates.longitude}`
             : `26.91${20 + spot.position.row},75.78${70 + spot.position.col}`, // Generate GPS if not set
           distance: currentDistance ?? spot.distance ?? null,
-          sensorPin: spot.sensorConfig?.sensorId, // Use sensorId as pin reference
-          threshold: spot.minThreshold || 20, // Use minThreshold for display
           spotData: spot,
         };
       })
@@ -59,7 +55,6 @@ export default function ParkingGrid({
           occupied: false,
           gps: "26.9124,75.7873",
           distance: distances[0] ?? null,
-          threshold: 10,
         },
         {
           id: "legacy-A2", 
@@ -69,7 +64,6 @@ export default function ParkingGrid({
           occupied: false,
           gps: "26.9126,75.7875",
           distance: distances[1] ?? null,
-          threshold: 10,
         },
         {
           id: "legacy-A3",
@@ -79,7 +73,6 @@ export default function ParkingGrid({
           occupied: false,
           gps: "26.9128,75.7877",
           distance: distances[2] ?? null,
-          threshold: 10,
         },
         {
           id: "legacy-B1",
@@ -89,7 +82,6 @@ export default function ParkingGrid({
           occupied: false,
           gps: "26.9130,75.7879",
           distance: distances[3] ?? null,
-          threshold: 10,
         },
         {
           id: "legacy-B2",
@@ -99,7 +91,6 @@ export default function ParkingGrid({
           occupied: false,
           gps: "26.9132,75.7881", 
           distance: distances[4] ?? null,
-          threshold: 10,
         },
         {
           id: "legacy-B3",
@@ -109,7 +100,6 @@ export default function ParkingGrid({
           occupied: false,
           gps: "26.9134,75.7883",
           distance: distances[5] ?? null,
-          threshold: 10,
         },
       ];
 
@@ -133,8 +123,6 @@ export default function ParkingGrid({
           occupied={slot.occupied}
           gps={slot.gps}
           distanceCm={slot.distance ?? null}
-          sensorPin={slot.sensorPin}
-          threshold={slot.threshold}
           spotData={slot.spotData}
         />
       ))}

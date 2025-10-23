@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -44,6 +44,7 @@ export default function AdminDashboard() {
   const [liveData, setLiveData] = useState<LiveData | null>(null);
   const [historicalData, setHistoricalData] = useState<HistoricalDataPoint[]>([]);
   const [spots, setSpots] = useState<ParkingSpot[]>([]);
+  // spots is used to store parking spot data for calculations
   const [loading, setLoading] = useState(true);
   const [timeRange, setTimeRange] = useState(24); // hours
   const [stats, setStats] = useState({
@@ -93,10 +94,37 @@ export default function AdminDashboard() {
         const spotsData = data.spots || [];
         setSpots(spotsData);
         
-        // Calculate stats from live data
-        if (liveData && liveData.distances) {
-          const liveOccupied = liveData.distances.filter((d: number | null) => d !== null && d < 10).length;
-          const liveAvailable = liveData.distances.filter((d: number | null) => d !== null && d >= 10).length;
+        // Calculate stats from live data using configured spots thresholds
+        if (liveData && liveData.distances && spotsData.length > 0) {
+          let liveOccupied = 0;
+          let liveAvailable = 0;
+          let inactive = 0;
+          
+          liveData.distances.forEach((distance: number | null, index: number) => {
+            const spot = spotsData.find((s: ParkingSpot) => s.sensorConfig?.sensorId === index);
+            const minThreshold = spot?.minThreshold || 20;
+            const maxThreshold = spot?.maxThreshold || 200;
+            
+            if (distance === null) {
+              inactive++;
+            } else if (distance >= minThreshold && distance <= maxThreshold) {
+              liveOccupied++;
+            } else {
+              liveAvailable++;
+            }
+          });
+          
+          setStats(prev => ({
+            ...prev,
+            total: liveData.distances.length,
+            occupied: liveOccupied,
+            available: liveAvailable,
+            inactive
+          }));
+        } else if (liveData && liveData.distances) {
+          // Fallback to legacy threshold for backward compatibility
+          const liveOccupied = liveData.distances.filter((d: number | null) => d !== null && d >= 20 && d <= 200).length;
+          const liveAvailable = liveData.distances.filter((d: number | null) => d !== null && (d < 20 || d > 200)).length;
           const inactive = liveData.distances.filter((d: number | null) => d === null).length;
           
           setStats(prev => ({
@@ -155,9 +183,13 @@ export default function AdminDashboard() {
   };
 
   useEffect(() => {
-    fetchSpots();
-    fetchLiveData();
-    fetchHistoricalData();
+    const initializeData = () => {
+      fetchSpots();
+      fetchLiveData();
+      fetchHistoricalData();
+    };
+    
+    initializeData();
     
     // Auto-refresh every 5 seconds
     const interval = setInterval(() => {
@@ -174,7 +206,7 @@ export default function AdminDashboard() {
       clearInterval(interval);
       clearInterval(historyInterval);
     };
-  }, [timeRange]);
+  }, [timeRange]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Chart colors
   const COLORS = {
@@ -302,30 +334,46 @@ export default function AdminDashboard() {
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {liveData.distances.map((distance: number | null, index: number) => (
-                <div key={index} className="bg-slate-800 p-4 rounded-lg">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-400">Slot {index + 1}</span>
-                    <Badge
-                      variant="secondary"
-                      className={
-                        distance === null
-                          ? "bg-gray-600 text-gray-300"
-                          : distance < 10
-                          ? "bg-red-600 text-red-100"
-                          : "bg-green-600 text-green-100"
-                      }
-                    >
-                      {distance === null ? 'OFFLINE' : distance < 10 ? 'OCCUPIED' : 'FREE'}
-                    </Badge>
-                  </div>
-                  <div className="mt-2">
-                    <div className="text-2xl font-bold text-white">
-                      {distance === null ? '---' : `${distance.toFixed(1)}cm`}
+              {liveData.distances.map((distance: number | null, index: number) => {
+                const spot = spots.find((s: ParkingSpot) => s.sensorConfig?.sensorId === index);
+                const minThreshold = spot?.minThreshold || 20;
+                const maxThreshold = spot?.maxThreshold || 200;
+                const slotName = spot ? spot.name : `Slot ${index + 1}`;
+                
+                let status = 'OFFLINE';
+                let statusColor = "bg-gray-600 text-gray-300";
+                
+                if (distance !== null) {
+                  if (distance >= minThreshold && distance <= maxThreshold) {
+                    status = 'OCCUPIED';
+                    statusColor = "bg-red-600 text-red-100";
+                  } else {
+                    status = 'FREE';
+                    statusColor = "bg-green-600 text-green-100";
+                  }
+                }
+                
+                return (
+                  <div key={index} className="bg-slate-800 p-4 rounded-lg">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-gray-400">{slotName}</span>
+                      <Badge variant="secondary" className={statusColor}>
+                        {status}
+                      </Badge>
+                    </div>
+                    <div className="mt-2">
+                      <div className="text-2xl font-bold text-white">
+                        {distance === null ? '---' : `${distance.toFixed(1)}cm`}
+                      </div>
+                      {spot && distance !== null && (
+                        <div className="text-xs text-gray-400 mt-1">
+                          Threshold: {minThreshold}-{maxThreshold}cm
+                        </div>
+                      )}
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
             <div className="mt-4 text-xs text-gray-400">
               Last Update: {new Date(liveData.timestamp).toLocaleString()}

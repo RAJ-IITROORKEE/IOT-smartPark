@@ -46,13 +46,14 @@ export async function POST(request: NextRequest) {
         latitude: Number(latitude),
         longitude: Number(longitude)
       } : undefined,
-      sensorConfig: trigPin && echoPin && sensorId !== undefined ? {
+      sensorConfig: trigPin !== undefined && echoPin !== undefined && sensorId !== undefined ? {
         trigPin: Number(trigPin),
         echoPin: Number(echoPin),
         sensorId: Number(sensorId)
       } : undefined,
       isOccupied: false,
       lastUpdate: Timestamp.now(),
+      distance: undefined,
       minThreshold: Number(minThreshold),
       maxThreshold: Number(maxThreshold),
       isActive: Boolean(isActive),

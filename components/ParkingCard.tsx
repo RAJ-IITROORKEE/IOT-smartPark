@@ -27,6 +27,8 @@ type Props = {
   installed?: boolean;
   active?: boolean;
   occupied?: boolean;
+  sensorPin?: number;
+  threshold?: number;
   spotData?: ParkingSpot;
 };
 
@@ -37,6 +39,8 @@ export default function ParkingCard({
   installed = false,
   active = false,
   occupied: propOccupied = false,
+  sensorPin,
+  threshold = 10,
   spotData,
 }: Readonly<Props>) {
   const [open, setOpen] = useState(false);

@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import Header from "@/components/Header";
+import Footer from "@/components/Footer";
 import ParkingGrid from "@/components/ParkingGrid";
 import ParkingOccupancyChart from "@/components/ParkingOccupancyChart";
 import { ParkingSpot, HistoryPoint } from "@/lib/types";
@@ -10,6 +11,7 @@ export default function Page() {
   const [spots, setSpots] = useState<ParkingSpot[]>([]);
   const [distances, setDistances] = useState<(number | null)[]>([null, null, null]);
   const [lastValidDistances, setLastValidDistances] = useState<(number | null)[]>([null, null, null]);
+  // Used for anti-blinking logic
   const [active, setActive] = useState(false);
   const [history, setHistory] = useState<HistoryPoint[]>([]);
   const [loading, setLoading] = useState(true);
@@ -152,10 +154,24 @@ export default function Page() {
             <div className="text-sm text-gray-400">
               <div>Total: {spots.length || 3}</div>
               <div className="text-green-400">
-                Available: {spots.length ? spots.filter(s => s.isActive && !s.isOccupied).length : distances.filter((d, i) => d !== null && d >= 10).length}
+                Available: {spots.length ? spots.filter(s => s.isActive && !s.isOccupied).length : 
+                  distances.filter((d, i) => {
+                    if (d === null) return false;
+                    const spot = spots.find(s => s.sensorConfig?.sensorId === i);
+                    const minThreshold = spot?.minThreshold || 20;
+                    const maxThreshold = spot?.maxThreshold || 200;
+                    return d < minThreshold || d > maxThreshold;
+                  }).length}
               </div>
               <div className="text-red-400">
-                Occupied: {spots.length ? spots.filter(s => s.isActive && s.isOccupied).length : distances.filter((d, i) => d !== null && d < 10).length}
+                Occupied: {spots.length ? spots.filter(s => s.isActive && s.isOccupied).length : 
+                  distances.filter((d, i) => {
+                    if (d === null) return false;
+                    const spot = spots.find(s => s.sensorConfig?.sensorId === i);
+                    const minThreshold = spot?.minThreshold || 20;
+                    const maxThreshold = spot?.maxThreshold || 200;
+                    return d >= minThreshold && d <= maxThreshold;
+                  }).length}
               </div>
             </div>
           </div>
@@ -187,6 +203,7 @@ export default function Page() {
           )}
         </div>
       </main>
+      <Footer />
     </div>
   );
 }
